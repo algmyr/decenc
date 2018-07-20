@@ -11,12 +11,12 @@ def debug(*args,**kwargs): print(*args,file=sys.stderr,**kwargs)
 def hn_hash_linux(text):
     """
         Hash matching the version used in Hacknet on Linux
+        (and other systems using mono)
     """
     num = 0
     i = 0
     for c in text:
-        num = (num << 5) - num + (ord(c) & 0xff)
-        num = (num << 5) - num + (ord(c) >> 8) # Doesn't matter for ascii
+        num = (num << 5) - num + ord(c)
     return num
 
 def hn_hash_win(text):
@@ -39,17 +39,14 @@ def hn_hash_win(text):
 
     return num + num2*0x5d588b65
 
-def hn_hash_osx(text):
-    raise NotImplementedError("fix this")
-
 def hn_hash(text):
-    #sys.platform = 'win32'
+    # Only Windows actually differ
     if sys.platform.startswith('linux'):
         h = hn_hash_linux(text)
     elif sys.platform in ['win32', 'cygwin']:
         h = hn_hash_win(text)
     elif sys.platform in ['darwin']:
-        h = hn_hash_win(text)
+        h = hn_hash_linux(text)
     else:
         # Some other *NIX?
         debug('Platform not recognized, trying hash for linux')
