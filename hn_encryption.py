@@ -8,15 +8,53 @@ import rainbow
 def debug(*args,**kwargs): print(*args,file=sys.stderr,**kwargs)
 
 # General helper
-def hn_hash(text):
+def hn_hash_linux(text):
     """
-        Hash matching the mono version used in Hacknet
+        Hash matching the version used in Hacknet on Linux
     """
     num = 0
     i = 0
     for c in text:
-        num = (num << 5) - num + ord(c)
-    return num % (2**16)
+        num = (num << 5) - num + (ord(c) & 0xff)
+        num = (num << 5) - num + (ord(c) >> 8) # Doesn't matter for ascii
+    return num
+
+def hn_hash_win(text):
+    """
+        Hash matching the version used in Hacknet on Windows
+    """
+    num = num2 = 0x15051505
+
+    A = [ord(x) for x in text]
+    if len(A)%2 == 1:
+        A.append(0)
+
+    Z = [a + (b<<16) for a,b in zip(A[0::2], A[1::2])]
+
+    for i in range(0,len(Z),2):
+        num = ((num<<5) + num + (num >> 27)) ^ Z[i]
+        num2 = ((num2<<5) + num2 + (num2 >> 27)) ^ Z[i]
+    if len(Z)%2 == 1:
+        num = ((num<<5) + num + (num >> 27)) ^ Z[i]
+
+    return num + num2*0x5d588b65
+
+def hn_hash_osx(text):
+    raise NotImplementedError("fix this")
+
+def hn_hash(text):
+    #sys.platform = 'win32'
+    if sys.platform.startswith('linux'):
+        h = hn_hash_linux(text)
+    elif sys.platform in ['win32', 'cygwin']:
+        h = hn_hash_win(text)
+    elif sys.platform in ['darwin']:
+        h = hn_hash_win(text)
+    else:
+        # Some other *NIX?
+        debug('Platform not recognized, trying hash for linux')
+        h = hn_hash_linux(text)
+    return h % (2**16)
 
 NOPASS = hn_hash('')
 
