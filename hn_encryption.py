@@ -33,7 +33,7 @@ def hn_hash_win(text):
 
     for i in range(0,len(Z),2):
         num = ((num<<5) + num + (num >> 27)) ^ Z[i]
-        num2 = ((num2<<5) + num2 + (num2 >> 27)) ^ Z[i]
+        num2 = ((num2<<5) + num2 + (num2 >> 27)) ^ Z[i+1]
     if len(Z)%2 == 1:
         num = ((num<<5) + num + (num >> 27)) ^ Z[i]
 
