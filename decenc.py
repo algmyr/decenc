@@ -63,6 +63,7 @@ parser.add_argument('-v',
                     help="verbose mode")
 parser.set_defaults(mode=lambda x:parser.print_usage())
 
+
 subparsers = parser.add_subparsers(
         title='modes')
         #description='valid modes'
@@ -117,4 +118,5 @@ enc_parser.set_defaults(mode=encypher)
 
 
 args = parser.parse_args()
+
 args.mode(args)

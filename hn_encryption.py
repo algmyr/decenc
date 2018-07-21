@@ -3,11 +3,15 @@ import sys
 if sys.version_info < (3, 0):
     range = xrange
 
-import rainbow
-
-def debug(*args,**kwargs): print(*args,file=sys.stderr,**kwargs)
 
 # General helper
+def debug(*args,**kwargs): print(*args,file=sys.stderr,**kwargs)
+
+def intify(x):
+    y = x&0xffffffff
+    if y > 0x7fffffff: y -= 2**32
+    return y
+
 def hn_hash_linux(text):
     """
         Hash matching the version used in Hacknet on Linux
@@ -16,7 +20,7 @@ def hn_hash_linux(text):
     num = 0
     i = 0
     for c in text:
-        num = (num << 5) - num + ord(c)
+        num = intify((num << 5) - num + ord(c))
     return num
 
 def hn_hash_win(text):
@@ -31,30 +35,25 @@ def hn_hash_win(text):
 
     Z = [a + (b<<16) for a,b in zip(A[0::2], A[1::2])]
 
-    for i in range(0,len(Z),2):
-        num = ((num<<5) + num + (num >> 27)) ^ Z[i]
-        num2 = ((num2<<5) + num2 + (num2 >> 27)) ^ Z[i+1]
-    if len(Z)%2 == 1:
-        num = ((num<<5) + num + (num >> 27)) ^ Z[i]
 
-    return num + num2*0x5d588b65
+    for i in range(0,len(Z)-1,2):
+        num  = intify( ((num <<5) + num  + (num  >> 27))^Z[i]   )
+        num2 = intify( ((num2<<5) + num2 + (num2 >> 27))^Z[i+1] )
+    if len(Z)%2 == 1:
+        num  = intify( ((num <<5) + num  + (num  >> 27))^Z[-1]  )
+
+    return intify(num + num2*0x5d588b65)
 
 def hn_hash(text):
     # Only Windows actually differ
-    if sys.platform.startswith('linux'):
-        h = hn_hash_linux(text)
-    elif sys.platform in ['win32', 'cygwin']:
+    if sys.platform in ['win32', 'cygwin']:
         h = hn_hash_win(text)
-    elif sys.platform in ['darwin']:
-        h = hn_hash_linux(text)
     else:
-        # Some other *NIX?
-        debug('Platform not recognized, trying hash for linux')
         h = hn_hash_linux(text)
     return h % (2**16)
 
-NOPASS = hn_hash('')
 
+NOPASS = hn_hash('')
 
 # Actual decryption/encryption code
 def decrypt(data, passcode):
@@ -180,6 +179,10 @@ def decrypt_brute(s, nlayers=1, verbose=False):
             debug('=== Pass {} ==='.format(i+1))
             debug(dec.header())
             #debug(s)
+            if sys.platform in ["win32","darwin"]:
+                import rainbow_win as rainbow
+            else:
+                import rainbow_linux as rainbow
             debug('One possible pass is', rainbow.table[pw])
     return dec,s
 
